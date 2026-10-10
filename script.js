@@ -6,11 +6,11 @@ const CONFIG = {
   // Server 1–5 currently all use your supplied Heroku server.
   // Replace individual URLs whenever you have different servers.
   servers: [
-    "https://teddyxmdultraminifinal-14c420cbedd9.herokuapp.com/",
-    "https://teddyxmdultraminifinal-14c420cbedd9.herokuapp.com/",
-    "https://teddyxmdultraminifinal-14c420cbedd9.herokuapp.com/",
-    "https://teddyxmdultraminifinal-14c420cbedd9.herokuapp.com/",
-    "https://teddyxmdultraminifinal-14c420cbedd9.herokuapp.com/"
+    "https://teddytech-374dcd019c6d.herokuapp.com/",
+    "https://teddytech-374dcd019c6d.herokuapp.com/",
+    "https://teddytech-374dcd019c6d.herokuapp.com/",
+    "https://teddytech-374dcd019c6d.herokuapp.com/",
+    "https://teddytech-374dcd019c6d.herokuapp.com/"
   ],
 
   github: "https://github.com/Teddyxmd/TEDDY-XMD",
@@ -22,7 +22,7 @@ const CONFIG = {
       icon: "💬",
       name: "My WhatsApp",
       detail: "Direct WhatsApp contact",
-      url: "https://wa.me/YOUR_NUMBER"
+      url: "https://wa.me/254799963583"
     },
     {
       icon: "👥",
@@ -40,19 +40,19 @@ const CONFIG = {
       icon: "✈️",
       name: "Telegram Group",
       detail: "Community discussion",
-      url: "https://t.me/YOUR_TELEGRAM_GROUP"
+      url: "https://t.me/xdbot1"
     },
     {
       icon: "📢",
       name: "Telegram Channel",
       detail: "Updates & announcements",
-      url: "https://t.me/YOUR_TELEGRAM_CHANNEL"
+      url: "https://t.me/xdbot1"
     },
     {
       icon: "👨‍💻",
       name: "Contact Developer",
       detail: "Support & development",
-      url: "https://wa.me/YOUR_DEVELOPER_NUMBER"
+      url: "https://wa.me/254799963583"
     }
   ]
 };
@@ -96,4 +96,73 @@ menuToggle.addEventListener("click", () => {
 
 document.querySelectorAll("#navLinks a").forEach(link => {
   link.addEventListener("click", () => navLinks.classList.remove("open"));
+});
+
+// Website AI chat uses a same-origin Vercel function to call the shared Neosoft Gemini API.
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const chatMessages = document.getElementById('chatMessages');
+const chatSend = document.getElementById('chatSend');
+
+function addChatMessage(role, text, typing = false) {
+  const row = document.createElement('div');
+  row.className = `chat-message ${role}`;
+  const avatar = document.createElement('span');
+  avatar.className = 'message-avatar';
+  avatar.textContent = role === 'user' ? '●' : '✦';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  if (typing) {
+    bubble.innerHTML = '<span class="typing-dots" aria-label="Teddy AI is thinking"><i></i><i></i><i></i></span>';
+  } else {
+    bubble.textContent = text;
+  }
+  row.append(avatar, bubble);
+  chatMessages.appendChild(row);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return { row, bubble };
+}
+
+async function askTeddy(message) {
+  addChatMessage('user', message);
+  const pending = addChatMessage('assistant', '', true);
+  chatInput.value = '';
+  chatSend.disabled = true;
+  chatInput.disabled = true;
+  try {
+    const response = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'The AI service is unavailable. Please try again.');
+    pending.bubble.textContent = data.answer || 'I did not receive a readable answer. Please try again.';
+  } catch (error) {
+    pending.bubble.textContent = error.message || 'Connection failed. Please try again.';
+  } finally {
+    chatSend.disabled = false;
+    chatInput.disabled = false;
+    chatInput.focus();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+}
+
+chatForm?.addEventListener('submit', event => {
+  event.preventDefault();
+  const message = chatInput.value.trim();
+  if (message && !chatSend.disabled) askTeddy(message);
+});
+
+document.querySelectorAll('[data-prompt]').forEach(button => {
+  button.addEventListener('click', () => {
+    if (!chatSend.disabled) askTeddy(button.dataset.prompt);
+  });
+});
+
+chatInput?.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
 });
